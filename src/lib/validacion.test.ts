@@ -4,7 +4,7 @@ import { MAX_CORTO, MAX_DETALLE, esEnlaceValido, primerCampoConError, validar } 
 
 const valido: NuevaCorreccion = {
   codigo: 'CAM-1042', version: 'Proto 1', talle: 'M', color: 'Crudo', proveedor: 'Taller Sur',
-  tipo: 'Moldería', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
+  tipo: 'Medidas/calce', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
 };
 
 describe('validar', () => {

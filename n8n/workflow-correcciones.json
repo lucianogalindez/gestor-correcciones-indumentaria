@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Correcciones de muestras\n\n1. Reemplazá el **ID del Sheet** y la **credencial de Google** en los 5 nodos de Google Sheets.\n2. Reemplazá `https://REEMPLAZAR-TU-SITIO.netlify.app` por el dominio real de Netlify en los 3 Webhooks y en los 5 nodos \"Responder\".\n3. **Activá** el workflow y usá la URL de **producción** (/webhook/...), no la de prueba (/webhook-test/...).\n\nHoja \"Correcciones\", encabezados en A1:N1: ID | Artículo | Versión de muestra | Talle | Color | Proveedor/taller | Tipo de corrección | Detalle | Enlace de referencia | Responsable | Fecha requerida | Fecha de creación | Estado | Fecha de cierre",
+        "content": "## Correcciones de muestras\n\n1. Reemplazá el **ID del Sheet** y la **credencial de Google** en los 5 nodos de Google Sheets.\n2. El dominio de Netlify (https://indumentaria-correcciones.netlify.app) ya está cargado en los 3 Webhooks y en los 5 nodos \"Responder\".\n3. **Activá** el workflow y usá la URL de **producción** (/webhook/...), no la de prueba (/webhook-test/...).\n\nHoja \"Correcciones\", encabezados en A1:N1: ID | Artículo | Versión de muestra | Talle | Color | Proveedor/taller | Tipo de corrección | Detalle | Enlace de referencia | Responsable | Fecha requerida | Fecha de creación | Estado | Fecha de cierre",
         "height": 280,
         "width": 560
       },
@@ -22,7 +22,7 @@
         "path": "correcciones",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app"
         }
       },
       "id": "wh-listar",
@@ -89,7 +89,7 @@
             "entries": [
               {
                 "name": "Access-Control-Allow-Origin",
-                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+                "value": "https://indumentaria-correcciones.netlify.app"
               }
             ]
           }
@@ -110,7 +110,7 @@
         "path": "correcciones-crear",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app"
         }
       },
       "id": "wh-crear",
@@ -264,7 +264,7 @@
             "entries": [
               {
                 "name": "Access-Control-Allow-Origin",
-                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+                "value": "https://indumentaria-correcciones.netlify.app"
               }
             ]
           }
@@ -289,7 +289,7 @@
             "entries": [
               {
                 "name": "Access-Control-Allow-Origin",
-                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+                "value": "https://indumentaria-correcciones.netlify.app"
               }
             ]
           }
@@ -310,7 +310,7 @@
         "path": "correcciones-estado",
         "responseMode": "responseNode",
         "options": {
-          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app"
         }
       },
       "id": "wh-estado",
@@ -455,7 +455,7 @@
             "entries": [
               {
                 "name": "Access-Control-Allow-Origin",
-                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+                "value": "https://indumentaria-correcciones.netlify.app"
               }
             ]
           }
@@ -480,7 +480,7 @@
             "entries": [
               {
                 "name": "Access-Control-Allow-Origin",
-                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+                "value": "https://indumentaria-correcciones.netlify.app"
               }
             ]
           }

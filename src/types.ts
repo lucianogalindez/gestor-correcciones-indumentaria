@@ -2,14 +2,11 @@ export const ESTADOS = ['Pendiente', 'En corrección', 'Para revisar', 'Cerrada'
 export type Estado = (typeof ESTADOS)[number];
 
 export const TIPOS = [
-  'Moldería',
-  'Medidas / Talle',
+  'Medidas/calce',
+  'Costura/terminación',
   'Tela',
-  'Color',
-  'Costura / Confección',
-  'Avíos y accesorios',
-  'Estampa / Bordado',
-  'Terminación',
+  'Estampa/bordado',
+  'Avíos',
   'Otro',
 ] as const;
 

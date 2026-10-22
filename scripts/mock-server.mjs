@@ -32,11 +32,11 @@ const fila = (n, codigo, version, talle, color, proveedor, tipo, detalle, respon
 });
 
 const filas = [
-  fila(1, 'CAM-1042', 'Proto 1', 'M', 'Crudo', 'Taller Sur', 'Moldería', 'Cuello 1,5 cm alto.', 'Sofía Ramírez', -6, -14, 'En corrección', null),
-  fila(2, 'CAM-1042', 'Proto 2', 'M', 'Crudo', 'Taller Sur', 'Costura / Confección', 'Puntada floja en la sisa.', 'Sofía Ramírez', -2, -5, 'Pendiente', null),
-  fila(3, 'PAN-2210', 'Proto 1', '40', 'Azul noche', 'Confecciones Norte', 'Medidas / Talle', 'Tiro 1 cm corto.', 'Martín Pérez', 0, -3, 'Pendiente', null),
-  fila(4, 'VES-3301', 'Proto 3', 'S', 'Verde oliva', 'Taller Sur', 'Color', 'Tono más amarillento que el pantone.', 'Lucía Gómez', 3, -4, 'Para revisar', null),
-  fila(5, 'REM-1500', 'Proto 2', 'M', 'Blanco', 'Confecciones Norte', 'Avíos y accesorios', 'Cambiar botones.', 'Lucía Gómez', -12, -25, 'Cerrada', -13),
+  fila(1, 'CAM-1042', 'Proto 1', 'M', 'Crudo', 'Taller Sur', 'Medidas/calce', 'Cuello 1,5 cm alto.', 'Sofía Ramírez', -6, -14, 'En corrección', null),
+  fila(2, 'CAM-1042', 'Proto 2', 'M', 'Crudo', 'Taller Sur', 'Costura/terminación', 'Puntada floja en la sisa.', 'Sofía Ramírez', -2, -5, 'Pendiente', null),
+  fila(3, 'PAN-2210', 'Proto 1', '40', 'Azul noche', 'Confecciones Norte', 'Medidas/calce', 'Tiro 1 cm corto.', 'Martín Pérez', 0, -3, 'Pendiente', null),
+  fila(4, 'VES-3301', 'Proto 3', 'S', 'Verde oliva', 'Taller Sur', 'Tela', 'Tono más amarillento que el pantone.', 'Lucía Gómez', 3, -4, 'Para revisar', null),
+  fila(5, 'REM-1500', 'Proto 2', 'M', 'Blanco', 'Confecciones Norte', 'Avíos', 'Cambiar botones.', 'Lucía Gómez', -12, -25, 'Cerrada', -13),
 ];
 
 const campos = ['codigo', 'version', 'talle', 'color', 'proveedor', 'tipo', 'detalle', 'enlace', 'responsable', 'fecha'];

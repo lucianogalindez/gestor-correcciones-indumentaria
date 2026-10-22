@@ -4,7 +4,7 @@ import { ENCABEZADOS_CSV, escaparCelda, generarCsv, protegerFormula } from './cs
 
 const base: Correccion = {
   id: 'COR-0001', codigo: 'CAM-1042', version: 'Proto 1', talle: 'M', color: 'Crudo', proveedor: 'Taller Sur',
-  tipo: 'Moldería', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
+  tipo: 'Medidas/calce', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
   creada: '2026-10-01T10:00:00.000Z', estado: 'En corrección', cierre: '',
 };
 
@@ -57,7 +57,7 @@ describe('generarCsv', () => {
     expect(ENCABEZADOS_CSV[13]).toBe('Fecha de cierre');
   });
   it('conserva acentos y ñ', () => {
-    expect(csv).toContain('Moldería');
+    expect(csv).toContain('Medidas/calce');
     expect(csv).toContain('Sofía');
     expect(csv).toContain('En corrección');
   });

@@ -6,7 +6,7 @@ const HOY = '2026-10-21';
 
 const base: Correccion = {
   id: 'COR-0001', codigo: 'CAM-1042', version: 'Proto 1', talle: 'M', color: 'Crudo', proveedor: 'Taller Sur',
-  tipo: 'Moldería', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
+  tipo: 'Medidas/calce', detalle: 'Cuello alto', enlace: '', responsable: 'Sofía', fecha: '2026-10-25',
   creada: '2026-10-01T10:00:00.000Z', estado: 'Pendiente', cierre: '',
 };
 const mk = (o: Partial<Correccion>): Correccion => ({ ...base, ...o });

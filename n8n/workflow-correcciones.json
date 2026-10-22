@@ -1,0 +1,666 @@
+{
+  "name": "Correcciones de muestras",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Correcciones de muestras\n\n1. Reemplazá el **ID del Sheet** y la **credencial de Google** en los 5 nodos de Google Sheets.\n2. Reemplazá `https://REEMPLAZAR-TU-SITIO.netlify.app` por el dominio real de Netlify en los 3 Webhooks y en los 5 nodos \"Responder\".\n3. **Activá** el workflow y usá la URL de **producción** (/webhook/...), no la de prueba (/webhook-test/...).\n\nHoja \"Correcciones\", encabezados en A1:N1: ID | Artículo | Versión de muestra | Talle | Color | Proveedor/taller | Tipo de corrección | Detalle | Enlace de referencia | Responsable | Fecha requerida | Fecha de creación | Estado | Fecha de cierre",
+        "height": 280,
+        "width": 560
+      },
+      "id": "n-nota",
+      "name": "Leeme",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "correcciones",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+        }
+      },
+      "id": "wh-listar",
+      "name": "Webhook listar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        80,
+        200
+      ],
+      "webhookId": "wh-listar"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_EL_ID_DEL_SHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Correcciones",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "n-leer-1",
+      "name": "Leer filas (listar)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = (v) => (v === undefined || v === null ? '' : String(v).trim());\nconst ESTADOS = ['Pendiente', 'En corrección', 'Para revisar', 'Cerrada'];\nconst sinTildes = (t) => s(t).normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();\nconst filaAObjeto = (r) => ({\n  id: s(r['ID']), codigo: s(r['Artículo']), version: s(r['Versión de muestra']), talle: s(r['Talle']),\n  color: s(r['Color']), proveedor: s(r['Proveedor/taller']), tipo: s(r['Tipo de corrección']),\n  detalle: s(r['Detalle']), enlace: s(r['Enlace de referencia']), responsable: s(r['Responsable']),\n  fecha: s(r['Fecha requerida']), creada: s(r['Fecha de creación']), estado: s(r['Estado']),\n  cierre: s(r['Fecha de cierre']),\n});\n// Filas en blanco (sin ID) se ignoran.\nconst filas = $input.all().map((i) => i.json).filter((r) => s(r['ID']) !== '');\n\nreturn [{ json: { items: filas.map(filaAObjeto) } }];\n"
+      },
+      "id": "n-lista",
+      "name": "Armar lista",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+              }
+            ]
+          }
+        }
+      },
+      "id": "n-r-lista",
+      "name": "Responder lista",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "correcciones-crear",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+        }
+      },
+      "id": "wh-crear",
+      "name": "Webhook crear",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        80,
+        520
+      ],
+      "webhookId": "wh-crear"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_EL_ID_DEL_SHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Correcciones",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "n-leer-2",
+      "name": "Leer filas (crear)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = (v) => (v === undefined || v === null ? '' : String(v).trim());\nconst ESTADOS = ['Pendiente', 'En corrección', 'Para revisar', 'Cerrada'];\nconst sinTildes = (t) => s(t).normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();\nconst filaAObjeto = (r) => ({\n  id: s(r['ID']), codigo: s(r['Artículo']), version: s(r['Versión de muestra']), talle: s(r['Talle']),\n  color: s(r['Color']), proveedor: s(r['Proveedor/taller']), tipo: s(r['Tipo de corrección']),\n  detalle: s(r['Detalle']), enlace: s(r['Enlace de referencia']), responsable: s(r['Responsable']),\n  fecha: s(r['Fecha requerida']), creada: s(r['Fecha de creación']), estado: s(r['Estado']),\n  cierre: s(r['Fecha de cierre']),\n});\n// Filas en blanco (sin ID) se ignoran.\nconst filas = $input.all().map((i) => i.json).filter((r) => s(r['ID']) !== '');\n\nconst b = $('Webhook crear').first().json.body ?? {};\nconst campos = ['codigo', 'version', 'talle', 'color', 'proveedor', 'tipo', 'detalle', 'responsable', 'fecha'];\nconst faltan = campos.filter((c) => s(b[c]) === '');\nif (faltan.length) {\n  return [{ json: { status: 400, respuesta: { error: 'Faltan campos: ' + faltan.join(', ') } } }];\n}\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(s(b.fecha))) {\n  return [{ json: { status: 400, respuesta: { error: 'La fecha requerida debe ser AAAA-MM-DD' } } }];\n}\n// Siguiente ID: COR-0001, COR-0002, ...\nconst max = filas.reduce((m, r) => {\n  const n = Number((/^COR-(\\d+)$/.exec(s(r['ID'])) || [])[1] || 0);\n  return Math.max(m, n);\n}, 0);\nconst id = 'COR-' + String(max + 1).padStart(4, '0');\nconst creada = new Date().toISOString();\n\nconst respuesta = {\n  id, codigo: s(b.codigo), version: s(b.version), talle: s(b.talle), color: s(b.color),\n  proveedor: s(b.proveedor), tipo: s(b.tipo), detalle: s(b.detalle), enlace: s(b.enlace),\n  responsable: s(b.responsable), fecha: s(b.fecha), creada, estado: 'Pendiente', cierre: '',\n};\nconst row = {\n  'ID': respuesta.id, 'Artículo': respuesta.codigo, 'Versión de muestra': respuesta.version,\n  'Talle': respuesta.talle, 'Color': respuesta.color, 'Proveedor/taller': respuesta.proveedor,\n  'Tipo de corrección': respuesta.tipo, 'Detalle': respuesta.detalle,\n  'Enlace de referencia': respuesta.enlace, 'Responsable': respuesta.responsable,\n  'Fecha requerida': respuesta.fecha, 'Fecha de creación': respuesta.creada,\n  'Estado': respuesta.estado, 'Fecha de cierre': '',\n};\nreturn [{ json: { status: 200, respuesta, row } }];\n"
+      },
+      "id": "n-preparar",
+      "name": "Preparar fila",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "n-if-1-c",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n-if-1",
+      "name": "¿Datos válidos? (crear)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_EL_ID_DEL_SHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Correcciones",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.row['ID'] }}",
+            "Artículo": "={{ $json.row['Artículo'] }}",
+            "Versión de muestra": "={{ $json.row['Versión de muestra'] }}",
+            "Talle": "={{ $json.row['Talle'] }}",
+            "Color": "={{ $json.row['Color'] }}",
+            "Proveedor/taller": "={{ $json.row['Proveedor/taller'] }}",
+            "Tipo de corrección": "={{ $json.row['Tipo de corrección'] }}",
+            "Detalle": "={{ $json.row['Detalle'] }}",
+            "Enlace de referencia": "={{ $json.row['Enlace de referencia'] }}",
+            "Responsable": "={{ $json.row['Responsable'] }}",
+            "Fecha requerida": "={{ $json.row['Fecha requerida'] }}",
+            "Fecha de creación": "={{ $json.row['Fecha de creación'] }}",
+            "Estado": "={{ $json.row['Estado'] }}",
+            "Fecha de cierre": "={{ $json.row['Fecha de cierre'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "n-agregar",
+      "name": "Agregar fila",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Preparar fila').first().json.respuesta }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+              }
+            ]
+          }
+        }
+      },
+      "id": "n-r-creada",
+      "name": "Responder creada",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.respuesta }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+              }
+            ]
+          }
+        }
+      },
+      "id": "n-r-err-1",
+      "name": "Responder error (crear)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "correcciones-estado",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+        }
+      },
+      "id": "wh-estado",
+      "name": "Webhook estado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        80,
+        840
+      ],
+      "webhookId": "wh-estado"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_EL_ID_DEL_SHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Correcciones",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "n-leer-3",
+      "name": "Leer filas (estado)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        840
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = (v) => (v === undefined || v === null ? '' : String(v).trim());\nconst ESTADOS = ['Pendiente', 'En corrección', 'Para revisar', 'Cerrada'];\nconst sinTildes = (t) => s(t).normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();\nconst filaAObjeto = (r) => ({\n  id: s(r['ID']), codigo: s(r['Artículo']), version: s(r['Versión de muestra']), talle: s(r['Talle']),\n  color: s(r['Color']), proveedor: s(r['Proveedor/taller']), tipo: s(r['Tipo de corrección']),\n  detalle: s(r['Detalle']), enlace: s(r['Enlace de referencia']), responsable: s(r['Responsable']),\n  fecha: s(r['Fecha requerida']), creada: s(r['Fecha de creación']), estado: s(r['Estado']),\n  cierre: s(r['Fecha de cierre']),\n});\n// Filas en blanco (sin ID) se ignoran.\nconst filas = $input.all().map((i) => i.json).filter((r) => s(r['ID']) !== '');\n\nconst b = $('Webhook estado').first().json.body ?? {};\nconst id = s(b.id);\nconst estado = ESTADOS.find((e) => sinTildes(e) === sinTildes(b.estado));\nif (!id || !estado) {\n  return [{ json: { status: 400, respuesta: { error: 'Se requiere id y un estado válido' } } }];\n}\nconst fila = filas.find((r) => s(r['ID']) === id);\nif (!fila) {\n  return [{ json: { status: 404, respuesta: { error: 'No existe la solicitud ' + id } } }];\n}\nconst cierre = estado === 'Cerrada' ? s(b.cierre) : '';\nif (estado === 'Cerrada' && !/^\\d{4}-\\d{2}-\\d{2}$/.test(cierre)) {\n  return [{ json: { status: 400, respuesta: { error: 'La fecha de cierre debe ser AAAA-MM-DD' } } }];\n}\nconst respuesta = { ...filaAObjeto(fila), estado, cierre };\nconst update = { 'ID': id, 'Estado': estado, 'Fecha de cierre': cierre };\nreturn [{ json: { status: 200, respuesta, update } }];\n"
+      },
+      "id": "n-buscar",
+      "name": "Buscar fila por ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "n-if-2-c",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n-if-2",
+      "name": "¿Datos válidos? (estado)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_EL_ID_DEL_SHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Correcciones",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.update['ID'] }}",
+            "Estado": "={{ $json.update['Estado'] }}",
+            "Fecha de cierre": "={{ $json.update['Fecha de cierre'] }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "n-actualizar",
+      "name": "Actualizar fila",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        840
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Buscar fila por ID').first().json.respuesta }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+              }
+            ]
+          }
+        }
+      },
+      "id": "n-r-act",
+      "name": "Responder actualizada",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.respuesta }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://REEMPLAZAR-TU-SITIO.netlify.app"
+              }
+            ]
+          }
+        }
+      },
+      "id": "n-r-err-2",
+      "name": "Responder error (estado)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        1000
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook listar": {
+      "main": [
+        [
+          {
+            "node": "Leer filas (listar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas (listar)": {
+      "main": [
+        [
+          {
+            "node": "Armar lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar lista": {
+      "main": [
+        [
+          {
+            "node": "Responder lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook crear": {
+      "main": [
+        [
+          {
+            "node": "Leer filas (crear)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas (crear)": {
+      "main": [
+        [
+          {
+            "node": "Preparar fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar fila": {
+      "main": [
+        [
+          {
+            "node": "¿Datos válidos? (crear)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Datos válidos? (crear)": {
+      "main": [
+        [
+          {
+            "node": "Agregar fila",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder error (crear)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar fila": {
+      "main": [
+        [
+          {
+            "node": "Responder creada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook estado": {
+      "main": [
+        [
+          {
+            "node": "Leer filas (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas (estado)": {
+      "main": [
+        [
+          {
+            "node": "Buscar fila por ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar fila por ID": {
+      "main": [
+        [
+          {
+            "node": "¿Datos válidos? (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Datos válidos? (estado)": {
+      "main": [
+        [
+          {
+            "node": "Actualizar fila",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder error (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar fila": {
+      "main": [
+        [
+          {
+            "node": "Responder actualizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

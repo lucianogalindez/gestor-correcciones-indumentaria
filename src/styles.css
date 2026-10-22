@@ -66,7 +66,7 @@ p { margin: 0 0 0.5rem; }
 .tab:hover { color: var(--texto); }
 .tab[aria-current='page'] { color: var(--acento-fuerte); border-bottom-color: var(--acento); font-weight: 600; }
 
-main { padding-top: 32px; padding-bottom: 48px; }
+main.contenedor { padding-top: 32px; padding-bottom: 48px; }
 [hidden] { display: none !important; }
 
 .ayuda { color: var(--tenue); }

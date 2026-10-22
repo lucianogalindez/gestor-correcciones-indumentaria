@@ -29,7 +29,7 @@ export function App() {
       <a className="saltar" href="#contenido">Saltar al contenido</a>
       <header className="cabecera">
         <div className="contenedor cabecera__fila">
-          <div>
+          <div className="cabecera__titulo">
             <p className="cabecera__etiqueta">Diseño y Desarrollo de Producto</p>
             <h1>Correcciones de muestras</h1>
           </div>

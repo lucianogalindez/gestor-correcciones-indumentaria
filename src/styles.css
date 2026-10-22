@@ -54,9 +54,10 @@ p { margin: 0 0 0.5rem; }
 .cabecera { background: var(--superficie); border-bottom: 1px solid var(--borde); }
 .cabecera__fila {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
-  gap: 12px; padding-top: 16px;
+  gap: 12px;
 }
-.cabecera__etiqueta { margin: 0; font-size: 0.8rem; color: var(--tenue); letter-spacing: 0.04em; text-transform: uppercase; }
+.cabecera__titulo { padding: 20px 0 16px; }
+.cabecera__etiqueta { margin: 0 0 4px; font-size: 0.8rem; color: var(--tenue); letter-spacing: 0.04em; text-transform: uppercase; }
 .tabs { display: flex; gap: 4px; }
 .tab {
   font: inherit; background: none; border: 0; border-bottom: 3px solid transparent;
@@ -65,7 +66,7 @@ p { margin: 0 0 0.5rem; }
 .tab:hover { color: var(--texto); }
 .tab[aria-current='page'] { color: var(--acento-fuerte); border-bottom-color: var(--acento); font-weight: 600; }
 
-main { padding-top: 24px; padding-bottom: 48px; }
+main { padding-top: 32px; padding-bottom: 48px; }
 [hidden] { display: none !important; }
 
 .ayuda { color: var(--tenue); }

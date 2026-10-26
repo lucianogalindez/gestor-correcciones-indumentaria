@@ -1,6 +1,7 @@
 import { HttpFichasRepository } from '../fichas/httpFichasRepository';
 import { MockFichasRepository } from '../fichas/mockFichasRepository';
 import type { FichasRepository } from '../fichas/repositorio';
+import { HttpVerificacionRepository, MockVerificacionRepository, type VerificacionRepository } from '../verificacion/repositorio';
 import { ClienteHttp } from './clienteHttp';
 import { HttpRepository } from './httpRepository';
 import { LocalStorageRepository } from './localStorageRepository';
@@ -26,6 +27,12 @@ export function crearRepositorio(env: Entorno = import.meta.env): CorreccionesRe
 export function crearRepositorioFichas(env: Entorno = import.meta.env): FichasRepository {
   const cliente = clienteDe(env);
   return cliente ? new HttpFichasRepository(cliente) : new MockFichasRepository();
+}
+
+/** Con VITE_API_BASE_URL verifica contra n8n; sin ella, un mock según el nombre del archivo. */
+export function crearRepositorioVerificacion(env: Entorno = import.meta.env): VerificacionRepository {
+  const cliente = clienteDe(env);
+  return cliente ? new HttpVerificacionRepository(cliente) : new MockVerificacionRepository();
 }
 
 export type { CorreccionesRepository } from './repository';

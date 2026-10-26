@@ -2,7 +2,7 @@
 
 Aplicación web para registrar y dar seguimiento a las correcciones de muestras de indumentaria (Diseño y Desarrollo de Producto). Es un sitio estático (Vite + React + TypeScript) que se publica en Netlify y guarda los datos en un Google Sheet a través de n8n. Sin n8n funciona en modo demo, guardando en el navegador.
 
-- **Correcciones** (pestañas *Nueva corrección* y *Seguimiento*) y **Fichas técnicas** (ver más abajo).
+- **Correcciones** (pestañas *Nueva corrección* y *Seguimiento*), **Fichas técnicas** y **Verificación** (ver más abajo).
 - **Nueva corrección**: formulario con validaciones; confirma con el ID solo si el guardado fue exitoso.
 - **Seguimiento**: indicadores (abiertas, abiertas vencidas, % vencidas), filtros, orden por fecha requerida, detalle de cada solicitud, cambio de estado (Pendiente, En corrección, Para revisar, Cerrada) y exportación a CSV para Excel.
 
@@ -178,6 +178,25 @@ La segunda pestaña de la web (**Fichas técnicas**, dirección `#fichas`) permi
 
 Estados: Pendiente, En producción, Terminada, Entregada. El flujo de n8n se importa desde [`n8n/fichas-tecnicas-n8n-web.json`](n8n/fichas-tecnicas-n8n-web.json) (hay que asignar la credencial de Google Sheets, la de OpenAI, el ID del Sheet y el dominio de Netlify en CORS; después activarlo y usar la URL de producción, igual que en la sección 4). `npm run mock` también atiende estas tres rutas; un PDF con "error" en el nombre hace fallar `/fichas-subir` para probar el aviso de error.
 
+## Verificación de fichas
+
+La tercera pestaña (**Verificación**, dirección `#verificacion`) controla fichas técnicas contra una hoja de referencia: las fichas se arman a partir de un listado y acá se comprueba que cada una tenga los datos correctos.
+
+1. Arrastrá **varias fichas PDF a la vez** (solo PDF con texto, hasta 15 MB cada una; los archivos inválidos se avisan y no entran).
+2. Se procesan **de a una, en cola** (máximo 1 en paralelo), llamando por cada archivo a `POST /fichas-verificar` (`multipart/form-data`, campo `file`). Se ve el avance ("3 de 12"), se puede **cancelar el resto** (el archivo en curso se aborta; el límite es 120 s por archivo) y **reintentar** las que fallaron (botón general o por fila; las canceladas tienen "Procesar" por fila). Los archivos repetidos (mismo nombre y tamaño) se ignoran.
+3. Cada resultado se suma a la **tabla de control**: archivo, ficha, estado (OK, Con diferencias (n), Sin referencia, Error) y resumen. Al abrir una fila se ven las tablas de **campos** (en la ficha / en la referencia) y de **colores** (cantidades). Las filas distintas de OK se resaltan y además dicen en texto "Diferente", "Falta en la ficha" o "No está en la referencia". La app muestra ambos valores sin decidir quién tiene el error: puede ser la ficha, la referencia o la lectura de la IA.
+4. Indicadores (procesadas, OK, con diferencias, sin referencia, con error), filtro por estado, búsqueda por archivo/modelo/artículo, y orden con las que tienen diferencias primero. **Exportar informe CSV** genera una fila por diferencia (archivo, campo, ficha, referencia, resultado) con las mismas protecciones que el otro CSV.
+
+| Método y ruta | Entrada | Respuesta |
+|---|---|---|
+| `POST {BASE}/fichas-verificar` | `multipart/form-data`, campo `file` | `Verificacion`: `archivo`, `estado` (`OK`, `CON_DIFERENCIAS`, `SIN_REFERENCIA`), `clave`, `resumen`, `diferencias?`, `ficha`, `campos[]`, `colores[]` |
+
+Cada campo/color trae `resultado`: `ok`, `diferente`, `falta_en_ficha` o `falta_en_referencia`. Si el flujo falla (PDF escaneado, OpenAI caído) el navegador ve un error de red o 5xx sin mensaje: esa fila muestra "No se pudo leer esta ficha" con botón Reintentar.
+
+**La referencia** vive en la hoja **"Referencia"** del mismo Google Sheet. El flujo de n8n está en [`n8n/fichas-tecnicas-n8n-verificar.json`](n8n/fichas-tecnicas-n8n-verificar.json); se importa, se le asignan la credencial de Google Sheets, la de OpenAI y el ID del Sheet, y se activa (URL de producción), igual que los otros.
+
+Sin `VITE_API_BASE_URL` usa un mock que decide por el nombre del archivo: con **"dif"** devuelve diferencias (proveedor TEXAMERI vs TEXTIL AMERICANA y cantidad 600 vs 500), con **"sin-ref"** devuelve sin referencia, con **"error"** falla, y cualquier otro nombre da OK. `npm run mock` atiende también esta ruta con las mismas reglas.
+
 ## Estructura
 
 ```
@@ -199,9 +218,11 @@ src/
     index.ts                    elige adaptador según VITE_API_BASE_URL
   hooks/                        lectura periódica, "hoy" y fichas
   fichas/                       pestaña Fichas técnicas (lógica, repositorios HTTP/mock, componentes)
+  verificacion/                 pestaña Verificación (cola secuencial, comparación, informe CSV)
   components/                   formulario, seguimiento, detalle (diálogo), conexión
 n8n/workflow-correcciones.json  workflow importable (correcciones)
 n8n/fichas-tecnicas-n8n-web.json  workflow importable (fichas técnicas)
+n8n/fichas-tecnicas-n8n-verificar.json  workflow importable (verificación contra la referencia)
 scripts/mock-server.mjs         `npm run mock`
 ```
 

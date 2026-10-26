@@ -3,13 +3,15 @@ import { useCorrecciones } from './hooks/useCorrecciones';
 import { useHoy } from './hooks/useHoy';
 import { crearRepositorio } from './repositories';
 import { FichasView } from './fichas/FichasView';
+import { VerificacionView } from './verificacion/VerificacionView';
 import { NuevaCorreccionForm } from './components/NuevaCorreccionForm';
 import { Seguimiento } from './components/Seguimiento';
 
-type Seccion = 'correcciones' | 'fichas';
+type Seccion = 'correcciones' | 'fichas' | 'verificacion';
 type Vista = 'nueva' | 'seguimiento';
 
-const seccionDelHash = (): Seccion => (window.location.hash === '#fichas' ? 'fichas' : 'correcciones');
+const HASHES: Record<string, Seccion> = { '#fichas': 'fichas', '#verificacion': 'verificacion' };
+const seccionDelHash = (): Seccion => HASHES[window.location.hash] ?? 'correcciones';
 
 export function App() {
   const repo = useMemo(() => crearRepositorio(), []);
@@ -19,6 +21,7 @@ export function App() {
   const [vista, setVista] = useState<Vista>('nueva');
   // La pestaña de fichas se monta al visitarla por primera vez y después queda montada.
   const [fichasVisitada, setFichasVisitada] = useState(seccion === 'fichas');
+  const [verificacionVisitada, setVerificacionVisitada] = useState(seccion === 'verificacion');
 
   useEffect(() => {
     const alCambiar = () => setSeccion(seccionDelHash());
@@ -27,12 +30,13 @@ export function App() {
   }, []);
   useEffect(() => {
     if (seccion === 'fichas') setFichasVisitada(true);
+    if (seccion === 'verificacion') setVerificacionVisitada(true);
   }, [seccion]);
 
   const ir = (s: Seccion) => {
     setSeccion(s);
     // Correcciones no usa hash: se limpia sin recargar ni apilar historial.
-    const url = s === 'fichas' ? '#fichas' : window.location.pathname + window.location.search;
+    const url = s === 'correcciones' ? window.location.pathname + window.location.search : `#${s}`;
     window.history.replaceState(null, '', url);
   };
 
@@ -59,6 +63,7 @@ export function App() {
           <nav aria-label="Secciones" className="tabs">
             {tab('correcciones', 'Correcciones')}
             {tab('fichas', 'Fichas técnicas')}
+            {tab('verificacion', 'Verificación')}
           </nav>
         </div>
       </header>
@@ -90,6 +95,11 @@ export function App() {
         {fichasVisitada && (
           <div hidden={seccion !== 'fichas'}>
             <FichasView activo={seccion === 'fichas'} />
+          </div>
+        )}
+        {verificacionVisitada && (
+          <div hidden={seccion !== 'verificacion'}>
+            <VerificacionView />
           </div>
         )}
       </main>

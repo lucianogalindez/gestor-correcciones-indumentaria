@@ -1,0 +1,208 @@
+{
+  "name": "Fichas técnicas - verificar contra referencia",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fichas-verificar",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app",
+          "binaryPropertyName": "file"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e9e67197-daea-44a0-a731-d59d08498cfb",
+      "name": "Webhook verificar",
+      "webhookId": "d4b74dc2-ea89-4107-80c3-59d8ccf5c15d"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ],
+      "id": "4d8913d6-ec90-4115-942b-33aac9462f32",
+      "name": "Extraer texto del PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const PROMPT = \"Sos un asistente que lee fichas técnicas de indumentaria (Argentina) y devuelve los datos para cargarlos en una planilla.\\nReglas:\\n- Devolvé SOLO datos que figuren en la ficha. Si un dato no está o no lo podés leer con seguridad, devolvé null. No inventes ni deduzcas.\\n- articulo: número de \\\"Artículo\\\". modelo: nombre del \\\"Modelo\\\". temporada: tal cual figura (ej. \\\"Invierno 20\\\"). linea: \\\"Línea\\\" (ej. DEPORTIVA).\\n- ordenCompra: número de \\\"ORDEN DE COMPRA\\\".\\n- tela: la tela PRINCIPAL de la prenda, en el cuadro de telas (no forros, rebordes, etiquetas ni avíos). Incluí el nombre de la tela y, si figura, ancho y consumo (ej. \\\"Jersey marmolado - 1,80 mts - 0,210 Kg\\\").\\n- proveedor: el proveedor de esa tela principal (no el de estampa, bordado ni avíos). Si la ficha no indica proveedor de tela, usá el campo \\\"PROVEEDOR\\\" de la ficha (el que figura en el encabezado). Solo devolvé null si no hay ninguno.\\n- cantidadTotal: \\\"CANTIDAD TOTAL DE PRENDAS\\\" como número entero (sin puntos de miles). Si la ficha no trae cantidades (por ejemplo una ficha de muestra), devolvé null; no inventes ni pongas 0.\\n- colores: una entrada por cada color de la ficha (del cuadro de cantidades o, en fichas de muestra, el campo \\\"COLOR\\\"), con su código (ej. \\\"820\\\", o null si no hay), nombre (ej. \\\"NEGRO GRANIZADO\\\") y cantidad de prendas como entero (o null si no figura). Respetá el orden de la ficha.\\n- fecha: fecha de la ficha en formato AAAA-MM-DD (en la ficha suele estar como dd/mm/aaaa).\\n- advertencias: lista breve de dudas o inconsistencias que el usuario debería revisar (ej. \\\"la suma de colores no coincide con el total\\\", \\\"la tela no está clara\\\"). Vacía si no hay.\\nNo incluyas avíos ni insumos.\\nRespondé únicamente con un objeto JSON, sin texto antes ni después, con exactamente estas claves (ejemplo de formato, no copies los valores):\\n{\\\"articulo\\\": \\\"17678\\\", \\\"modelo\\\": \\\"JUAN\\\", \\\"temporada\\\": \\\"Invierno 20\\\", \\\"linea\\\": \\\"DEPORTIVA\\\", \\\"ordenCompra\\\": \\\"69107\\\", \\\"proveedor\\\": \\\"TEXAMERI\\\", \\\"tela\\\": \\\"Jersey marmolado - 1,80 mts - 0,210 Kg\\\", \\\"cantidadTotal\\\": 1200, \\\"fecha\\\": \\\"2019-10-28\\\", \\\"colores\\\": [{\\\"codigo\\\": \\\"820\\\", \\\"color\\\": \\\"NEGRO GRANIZADO\\\", \\\"cantidad\\\": 600}, {\\\"codigo\\\": \\\"881\\\", \\\"color\\\": \\\"AZUL MARINO GRANIZADO\\\", \\\"cantidad\\\": 600}], \\\"advertencias\\\": []}\\nLa clave \\\"colores\\\" nunca puede ir vacía: si no ves un cuadro de colores, buscá en todo el texto los patrones \\\"Código: NNN / NOMBRE DEL COLOR\\\" y \\\"Cantidad: N prendas\\\" (cada color tiene los dos). Usá exactamente las claves del ejemplo, en minúsculas y en español.\\nLos datos vienen del texto extraído de un PDF: las tablas pueden aparecer desordenadas, así que usá el contexto para ubicar cada dato.\";\nconst texto = String($input.first().json.text || '').trim();\nif (texto.length < 80) throw new Error('No se pudo leer texto del PDF (¿está escaneado?)');\nreturn [{ json: { prompt: PROMPT + '\\n\\n--- TEXTO DE LA FICHA ---\\n' + texto.slice(0, 60000) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ],
+      "id": "ddc660cb-ff69-4018-a920-d07f02c2c36f",
+      "name": "Armar mensaje"
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}",
+              "role": "user"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        780,
+        0
+      ],
+      "id": "cde40e6b-cce8-4f79-99af-3f88aaacaeeb",
+      "name": "OpenAI analizar ficha"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Referencia",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "e2dda20f-802c-48f0-87a4-fe698be91fc0",
+      "name": "Leer referencia",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee la ficha con la respuesta de OpenAI y la compara contra la hoja \"Referencia\" (la fuente de verdad).\nconst r = $('OpenAI analizar ficha').first().json;\nlet t = '';\nconst msg = (r.output || []).find(o => o.type === 'message');\nif (msg) { const p = (msg.content || []).find(c => c.type === 'output_text'); t = p ? p.text : ''; }\nif (!t) t = r.text || r.output_text || (r.message && r.message.content) || '';\nif (!t) throw new Error('OpenAI no devolvió datos');\nconst d = (typeof t === 'object') ? t : JSON.parse(String(t).replace(/^\\s*```(?:json)?/i, '').replace(/```\\s*$/, '').trim());\n\nconst txt = v => String(v === undefined || v === null ? '' : v).trim();\nconst pick = (o, ks) => { for (const k of Object.keys(o || {})) if (ks.includes(k.toLowerCase())) return o[k]; return undefined; };\nconst norm = v => txt(v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();\nconst num = v => { const n = parseInt(txt(v).replace(/[^\\d]/g, ''), 10); return isNaN(n) ? null : n; };\n\n// Respaldo sin IA para proveedor y artículo (igual que en la carga).\nlet textoPdf = '';\ntry { textoPdf = String($('Extraer texto del PDF').first().json.text || ''); } catch (e) {}\nconst fProv = txt(d.proveedor) || (/PROVEEDOR\\s*:\\s*([^\\n\\r]+?)(?:\\s{2,}|\\s+(?:TALLES?|COLOR|ART[IÍ]CULO|NOMBRE|TEMPORADA)\\b|[\\n\\r]|$)/i.exec(textoPdf) || [])[1] || '';\nconst fArt = txt(d.articulo) || (/ART[IÍ]CULO\\s*:\\s*(\\d{3,})/i.exec(textoPdf) || [])[1] || '';\n\nconst lista = pick(d, ['colores', 'colors']);\nconst fColores = (Array.isArray(lista) ? lista : []).map(c => ({\n  codigo: txt(pick(c, ['codigo', 'código', 'code'])), color: txt(pick(c, ['color', 'nombre', 'name'])), cantidad: num(pick(c, ['cantidad', 'qty', 'prendas']))\n}));\nconst kTotal = Object.keys(d).find(k => /total/i.test(k));\nconst ficha = { articulo: fArt, modelo: txt(d.modelo), temporada: txt(d.temporada), linea: txt(d.linea), ordenCompra: txt(d.ordenCompra),\n  proveedor: txt(fProv), tela: txt(d.tela), cantidadTotal: num(kTotal ? d[kTotal] : null), colores: fColores };\n\nconst w = $('Webhook verificar').first();\nconst archivo = ((w.binary || {}).file || {}).fileName || txt(((w.json || {}).body || {}).nombre) || '';\n\n// ---- Buscar la fila de referencia: por artículo si la ficha lo trae; si no, por modelo ----\nconst ref = $input.all().map(i => i.json).filter(x => txt(x['Artículo']) || txt(x['Modelo']));\nlet filas = [], clave = '';\nif (ficha.articulo) {\n  clave = 'Artículo ' + ficha.articulo;\n  filas = ref.filter(x => norm(x['Artículo']) === norm(ficha.articulo));\n  if (filas.length && ficha.ordenCompra) {\n    const conOc = filas.filter(x => !txt(x['Orden de compra']) || norm(x['Orden de compra']) === norm(ficha.ordenCompra));\n    if (conOc.length) filas = conOc;\n  }\n}\nif (!filas.length && ficha.modelo) {\n  clave = (ficha.articulo ? clave + ' (no encontrado); ' : '') + 'Modelo ' + ficha.modelo;\n  filas = ref.filter(x => norm(x['Modelo']) === norm(ficha.modelo));\n}\nif (!filas.length) {\n  return [{ json: { archivo, estado: 'SIN_REFERENCIA', clave: clave || '(la ficha no trae artículo ni modelo)', ficha, campos: [], colores: [],\n    resumen: 'No se encontró esta ficha en la hoja Referencia.' } }];\n}\nconst base = filas[0];\nconst R = { articulo: txt(base['Artículo']), modelo: txt(base['Modelo']), temporada: txt(base['Temporada']), linea: txt(base['Línea']),\n  ordenCompra: txt(base['Orden de compra']), proveedor: txt(base['Proveedor']), tela: txt(base['Tela']), cantidadTotal: num(base['Cantidad total de prendas']) };\n\n// ---- Comparación de campos ----\nconst campos = [];\nconst comparar = (campo, etiqueta, f, rf, modo) => {\n  if (!rf && rf !== 0) return;                       // la referencia no tiene el dato: no hay contra qué comparar\n  let res;\n  if (f === '' || f === null) res = 'falta_en_ficha';\n  else if (modo === 'num') res = (f === rf) ? 'ok' : 'diferente';\n  else if (modo === 'contiene') { const a = norm(f), b = norm(rf); res = (a === b || a.includes(b) || b.includes(a)) ? 'ok' : 'diferente'; }\n  else res = (norm(f) === norm(rf)) ? 'ok' : 'diferente';\n  campos.push({ campo: etiqueta, ficha: f === null ? '' : f, referencia: rf, resultado: res });\n};\ncomparar('articulo', 'Artículo', ficha.articulo, R.articulo);\ncomparar('modelo', 'Modelo', ficha.modelo, R.modelo);\ncomparar('temporada', 'Temporada', ficha.temporada, R.temporada);\ncomparar('linea', 'Línea', ficha.linea, R.linea);\ncomparar('ordenCompra', 'Orden de compra', ficha.ordenCompra, R.ordenCompra);\ncomparar('proveedor', 'Proveedor', ficha.proveedor, R.proveedor, 'contiene');\ncomparar('tela', 'Tela', ficha.tela, R.tela, 'contiene');\ncomparar('cantidadTotal', 'Cantidad total', ficha.cantidadTotal, R.cantidadTotal, 'num');\n\n// ---- Comparación de colores (por código; si no hay código, por nombre) ----\nconst colores = [];\nconst usados = new Set();\nfor (const x of filas) {\n  const rc = { codigo: txt(x['Código de color']), color: txt(x['Color']), cantidad: num(x['Cantidad del color']) };\n  if (!rc.codigo && !rc.color) continue;\n  const idx = fColores.findIndex((c, i) => !usados.has(i) && ((rc.codigo && c.codigo && norm(c.codigo) === norm(rc.codigo)) || (norm(c.color) && norm(c.color) === norm(rc.color))));\n  if (idx === -1) { colores.push({ codigo: rc.codigo, color: rc.color, ficha: null, referencia: rc.cantidad, resultado: 'falta_en_ficha' }); continue; }\n  usados.add(idx);\n  const fc = fColores[idx];\n  let res = 'ok';\n  if (rc.cantidad !== null && fc.cantidad === null) res = 'falta_en_ficha';\n  else if (rc.cantidad !== null && fc.cantidad !== rc.cantidad) res = 'diferente';\n  colores.push({ codigo: rc.codigo || fc.codigo, color: rc.color || fc.color, ficha: fc.cantidad, referencia: rc.cantidad, resultado: res });\n}\nfColores.forEach((c, i) => { if (!usados.has(i)) colores.push({ codigo: c.codigo, color: c.color, ficha: c.cantidad, referencia: null, resultado: 'falta_en_referencia' }); });\n\nconst malos = campos.filter(c => c.resultado !== 'ok').length + colores.filter(c => c.resultado !== 'ok').length;\nreturn [{ json: { archivo, estado: malos ? 'CON_DIFERENCIAS' : 'OK', clave, ficha, campos, colores, diferencias: malos,\n  resumen: malos ? malos + ' diferencia(s) encontradas.' : 'Todo coincide con la referencia.' } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ],
+      "id": "fd0b76b2-3bea-4ca1-94b9-4cbcf7c6d704",
+      "name": "Comparar con referencia"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1560,
+        0
+      ],
+      "id": "cfb5890a-bd8d-446e-99af-0de724cb3ffa",
+      "name": "Responder verificación"
+    }
+  ],
+  "connections": {
+    "Webhook verificar": {
+      "main": [
+        [
+          {
+            "node": "Extraer texto del PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer texto del PDF": {
+      "main": [
+        [
+          {
+            "node": "Armar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar mensaje": {
+      "main": [
+        [
+          {
+            "node": "OpenAI analizar ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI analizar ficha": {
+      "main": [
+        [
+          {
+            "node": "Leer referencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer referencia": {
+      "main": [
+        [
+          {
+            "node": "Comparar con referencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparar con referencia": {
+      "main": [
+        [
+          {
+            "node": "Responder verificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

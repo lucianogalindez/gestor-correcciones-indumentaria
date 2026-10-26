@@ -51,6 +51,32 @@ const FICHA = {
   ],
 };
 const filasFichas = [];
+
+// ---- Verificación contra referencia (según el nombre del archivo) ----
+const campoOk = (campo, v) => ({ campo, ficha: v, referencia: v, resultado: 'ok' });
+const verificacionDeEjemplo = (nombre) => {
+  const n = nombre.toLowerCase();
+  const base = { archivo: nombre, clave: 'Artículo 17678', ficha: FICHA };
+  const campos = [
+    campoOk('Artículo', '17678'), campoOk('Modelo', 'JUAN'), campoOk('Temporada', 'Invierno 20'), campoOk('Línea', 'DEPORTIVA'),
+    campoOk('Orden de compra', '69107'), campoOk('Proveedor', 'TEXAMERI'), campoOk('Tela', 'Jersey marmolado'), campoOk('Cantidad total', 1200),
+  ];
+  if (/sin[-_ ]?ref/.test(n)) {
+    return { ...base, estado: 'SIN_REFERENCIA', clave: 'Artículo 99999', resumen: 'No se encontró esta ficha en la hoja de referencia.',
+      diferencias: 0, ficha: { ...FICHA, articulo: '99999', modelo: 'DESCONOCIDO' },
+      campos: [{ campo: 'Artículo', ficha: '99999', referencia: null, resultado: 'falta_en_referencia' }], colores: [] };
+  }
+  if (/dif/.test(n)) {
+    return { ...base, estado: 'CON_DIFERENCIAS', resumen: '2 diferencias: proveedor y cantidad del color 820.', diferencias: 2,
+      campos: campos.map((c) => (c.campo === 'Proveedor' ? { ...c, referencia: 'TEXTIL AMERICANA', resultado: 'diferente' } : c)),
+      colores: [
+        { codigo: '820', color: 'NEGRO GRANIZADO', ficha: 600, referencia: 500, resultado: 'diferente' },
+        { codigo: '881', color: 'AZUL MARINO GRANIZADO', ficha: 600, referencia: 600, resultado: 'ok' },
+      ] };
+  }
+  return { ...base, estado: 'OK', resumen: 'Todos los datos coinciden con la referencia.', diferencias: 0, campos,
+    colores: FICHA.colores.map((c) => ({ codigo: c.codigo, color: c.color, ficha: c.cantidad, referencia: c.cantidad, resultado: 'ok' })) };
+};
 let cargas = 0;
 
 const leerCrudo = (req, max = 20 * 1024 * 1024) =>
@@ -164,6 +190,16 @@ const server = createServer(async (req, res) => {
       });
       return responder(res, 200, { idCarga, estado: 'Pendiente', filas: FICHA.colores.length, ficha: FICHA });
     }
+    if (req.method === 'POST' && ruta === '/fichas-verificar') {
+      const crudo = await leerCrudo(req);
+      const nombre = /filename="([^"]*)"/.exec(crudo.toString('latin1'))?.[1] ?? 'ficha.pdf';
+      await new Promise((r) => setTimeout(r, Number(process.env.MOCK_SUBIDA_MS ?? 1500)));
+      if (/error/i.test(nombre) || !String(req.headers['content-type'] ?? '').startsWith('multipart/form-data')) {
+        res.writeHead(500, cabeceras);
+        return res.end();
+      }
+      return responder(res, 200, verificacionDeEjemplo(nombre));
+    }
     if (req.method === 'POST' && ruta === '/fichas-estado') {
       const b = await leerCuerpo(req);
       if (!ESTADOS_FICHA.includes(b.estado)) return responder(res, 400, { error: 'Estado inválido' });
@@ -184,5 +220,6 @@ server.listen(PORT, () => {
   console.log('  POST /correcciones-crear');
   console.log('  POST /correcciones-estado');
   console.log('  GET  /fichas   POST /fichas-subir (multipart, campo file)   POST /fichas-estado');
+  console.log('  POST /fichas-verificar (multipart; el nombre decide: dif / sin-ref / error / otro = OK)');
   console.log(`Usalo con VITE_API_BASE_URL=http://localhost:${PORT}${API_KEY ? ' y VITE_API_KEY=' + API_KEY : ''}`);
 });

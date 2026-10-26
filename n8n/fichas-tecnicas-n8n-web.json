@@ -1,0 +1,934 @@
+{
+  "name": "Fichas técnicas (web)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "fichas",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "id": "8caf3418-7a7f-4046-a1a6-b3bda86e9097",
+      "name": "Webhook listar",
+      "webhookId": "68b36208-84e1-4e69-a291-12fca16552f2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Planilla",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        260,
+        300
+      ],
+      "id": "222b5c6b-83af-48aa-b000-4664d9013252",
+      "name": "Leer filas (listar)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Si completás CLAVE, la web tiene que enviar el mismo valor en el header X-API-Key (VITE_API_KEY).\nconst CLAVE = '';\nconst REQ = $('Webhook listar').first().json;\nif (CLAVE && (REQ.headers || {})['x-api-key'] !== CLAVE) return [{ json: { error: 'No autorizado', status: 401 } }];\nconst filas = $input.all().map(i => i.json).filter(r => r['ID de carga']);\nreturn [{ json: { items: filas.map(f => ({\n  idFila: f['ID de fila'] || '', idCarga: f['ID de carga'], cargado: f['Cargado el'] || '', articulo: f['Artículo'],\n  modelo: f['Modelo'] || '', temporada: f['Temporada'] || '', linea: f['Línea'] || '', ordenCompra: f['Orden de compra'] || '',\n  proveedor: f['Proveedor'] || '', tela: f['Tela'] || '', cantidadTotal: Number(f['Cantidad total de prendas']) || 0,\n  codigoColor: f['Código de color'] || '', color: f['Color'] || '', cantidadColor: Number(f['Cantidad del color']) || 0,\n  estado: f['Estado'] || 'Pendiente', fechaFicha: f['Fecha de la ficha'] || '', archivo: f['Archivo de origen'] || ''\n})) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ],
+      "id": "2743fe95-3a67-459d-9f9b-adbaa0f5edef",
+      "name": "Armar lista"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.error ? { error: $json.error } : $json) }}",
+        "options": {
+          "responseCode": "={{ $json.error ? ($json.status || 400) : 200 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        300
+      ],
+      "id": "9010789d-ef4d-49c5-a289-13036d41a8dc",
+      "name": "Responder lista"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fichas-estado",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        520
+      ],
+      "id": "a0a83c5d-1a45-44ef-adcb-28cce58440cd",
+      "name": "Webhook estado",
+      "webhookId": "5e7d43ec-d6c3-40ba-96f2-dd5e13245e0c"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Planilla",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        260,
+        520
+      ],
+      "id": "95be4490-7576-4f4b-a1bb-d582c83aca73",
+      "name": "Leer filas (estado)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Si completás CLAVE, la web tiene que enviar el mismo valor en el header X-API-Key (VITE_API_KEY).\nconst CLAVE = '';\nconst REQ = $('Webhook estado').first().json;\nif (CLAVE && (REQ.headers || {})['x-api-key'] !== CLAVE) return [{ json: { error: 'No autorizado', status: 401 } }];\nconst b = REQ.body || {};\nconst err = (m, s) => [{ json: { error: m, status: s || 400 } }];\nconst ESTADOS = ['Pendiente', 'En producción', 'Terminada', 'Entregada'];\nconst id = String(b.idCarga || '').trim();\nif (!/^FT-\\d+$/.test(id)) return err('ID de carga inválido');\nif (!ESTADOS.includes(b.estado)) return err('Estado inválido');\nconst filas = $input.all().map(i => i.json).filter(r => r['ID de carga'] === id);\nif (!filas.length) return err('No se encontró la carga ' + id, 404);\nreturn filas.map(r => ({ json: { 'ID de fila': r['ID de fila'], 'Estado': b.estado, idCarga: id } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        520
+      ],
+      "id": "c0dc0e63-2015-476a-8713-a5679acadcdd",
+      "name": "Validar estado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d390479b-271f-45e1-8645-02e409bf2d41",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        520
+      ],
+      "id": "8641092e-fa43-4b6a-ba04-7b09ef2a8922",
+      "name": "¿Error? (estado)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.error ? { error: $json.error } : $json) }}",
+        "options": {
+          "responseCode": "={{ $json.error ? ($json.status || 400) : 200 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        460
+      ],
+      "id": "8cff7fe8-6406-4766-abf2-6d2606e824da",
+      "name": "Responder error (estado)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Planilla",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID de fila": "={{ $json['ID de fila'] }}",
+            "Estado": "={{ $json['Estado'] }}"
+          },
+          "matchingColumns": [
+            "ID de fila"
+          ],
+          "schema": [
+            {
+              "id": "ID de carga",
+              "displayName": "ID de carga",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cargado el",
+              "displayName": "Cargado el",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Artículo",
+              "displayName": "Artículo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Modelo",
+              "displayName": "Modelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Temporada",
+              "displayName": "Temporada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Línea",
+              "displayName": "Línea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Orden de compra",
+              "displayName": "Orden de compra",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Proveedor",
+              "displayName": "Proveedor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tela",
+              "displayName": "Tela",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad total de prendas",
+              "displayName": "Cantidad total de prendas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Código de color",
+              "displayName": "Código de color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Color",
+              "displayName": "Color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad del color",
+              "displayName": "Cantidad del color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fecha de la ficha",
+              "displayName": "Fecha de la ficha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Archivo de origen",
+              "displayName": "Archivo de origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID de fila",
+              "displayName": "ID de fila",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        640
+      ],
+      "id": "4f0696a2-6b29-4a84-a334-789b95d868f8",
+      "name": "Actualizar estado"
+    },
+    {
+      "parameters": {
+        "jsCode": "const filas = $('Validar estado').all().map(i => i.json);\nreturn [{ json: { idCarga: filas[0].idCarga, estado: filas[0]['Estado'], filas: filas.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        640
+      ],
+      "id": "6dfb0590-3d0e-4964-b25f-2ca96654c59a",
+      "name": "Armar respuesta (estado)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.error ? { error: $json.error } : $json) }}",
+        "options": {
+          "responseCode": "={{ $json.error ? ($json.status || 400) : 200 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1560,
+        640
+      ],
+      "id": "53a66364-24f5-4f7f-b519-6df91fe27fc4",
+      "name": "Responder estado"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fichas-subir",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://indumentaria-correcciones.netlify.app",
+          "binaryPropertyName": "file"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5bd10aff-85fb-445c-b450-5d166c485dd2",
+      "name": "Webhook subir",
+      "webhookId": "409d5878-3b37-40d7-a2b9-74e3bf1d3ccc"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ],
+      "id": "ba2cec31-8274-4451-9320-b9a0eba50111",
+      "name": "Extraer texto del PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const PROMPT = \"Sos un asistente que lee fichas técnicas de indumentaria (Argentina) y devuelve los datos para cargarlos en una planilla.\\nReglas:\\n- Devolvé SOLO datos que figuren en la ficha. Si un dato no está o no lo podés leer con seguridad, devolvé null. No inventes ni deduzcas.\\n- articulo: número de \\\"Artículo\\\". modelo: nombre del \\\"Modelo\\\". temporada: tal cual figura (ej. \\\"Invierno 20\\\"). linea: \\\"Línea\\\" (ej. DEPORTIVA).\\n- ordenCompra: número de \\\"ORDEN DE COMPRA\\\".\\n- tela: la tela PRINCIPAL de la prenda, en el cuadro de telas (no forros, rebordes, etiquetas ni avíos). Incluí el nombre de la tela y, si figura, ancho y consumo (ej. \\\"Jersey marmolado - 1,80 mts - 0,210 Kg\\\").\\n- proveedor: el proveedor de esa tela principal (no el de estampa, bordado ni avíos).\\n- cantidadTotal: \\\"CANTIDAD TOTAL DE PRENDAS\\\" como número entero (sin puntos de miles).\\n- colores: una entrada por cada color del cuadro de cantidades, con su código (ej. \\\"820\\\"), nombre (ej. \\\"NEGRO GRANIZADO\\\") y cantidad de prendas como entero. Respetá el orden de la ficha.\\n- fecha: fecha de la ficha en formato AAAA-MM-DD (en la ficha suele estar como dd/mm/aaaa).\\n- advertencias: lista breve de dudas o inconsistencias que el usuario debería revisar (ej. \\\"la suma de colores no coincide con el total\\\", \\\"la tela no está clara\\\"). Vacía si no hay.\\nNo incluyas avíos ni insumos.\\nRespondé únicamente con un objeto JSON, sin texto antes ni después, con exactamente estas claves (ejemplo de formato, no copies los valores):\\n{\\\"articulo\\\": \\\"17678\\\", \\\"modelo\\\": \\\"JUAN\\\", \\\"temporada\\\": \\\"Invierno 20\\\", \\\"linea\\\": \\\"DEPORTIVA\\\", \\\"ordenCompra\\\": \\\"69107\\\", \\\"proveedor\\\": \\\"TEXAMERI\\\", \\\"tela\\\": \\\"Jersey marmolado - 1,80 mts - 0,210 Kg\\\", \\\"cantidadTotal\\\": 1200, \\\"fecha\\\": \\\"2019-10-28\\\", \\\"colores\\\": [{\\\"codigo\\\": \\\"820\\\", \\\"color\\\": \\\"NEGRO GRANIZADO\\\", \\\"cantidad\\\": 600}], \\\"advertencias\\\": []}\\nLos datos vienen del texto extraído de un PDF: las tablas pueden aparecer desordenadas, así que usá el contexto para ubicar cada dato.\";\nconst texto = String($input.first().json.text || '').trim();\nif (texto.length < 80) throw new Error('No se pudo leer texto del PDF (¿está escaneado?)');\nreturn [{ json: { prompt: PROMPT + '\\n\\n--- TEXTO DE LA FICHA ---\\n' + texto.slice(0, 60000) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ],
+      "id": "56a8076c-e557-4134-9850-3681275e8a9c",
+      "name": "Armar mensaje"
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}",
+              "role": "user"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        780,
+        0
+      ],
+      "id": "29eda08a-0b94-4e1a-86b7-b11210ec19b8",
+      "name": "OpenAI analizar ficha"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Planilla",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "7ffb2826-f3e5-47ae-86bb-5f6f0fd801fb",
+      "name": "Leer filas actuales",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Toma la respuesta de OpenAI, la convierte en filas (una por color) y la deja lista para agregar al Sheet.\nconst r = $('OpenAI analizar ficha').first().json;\nlet t = '';\nconst msg = (r.output || []).find(o => o.type === 'message');\nif (msg) { const p = (msg.content || []).find(c => c.type === 'output_text'); t = p ? p.text : ''; }\nif (!t) t = r.text || r.output_text || (r.message && r.message.content) || '';\nif (!t) throw new Error('OpenAI no devolvió datos');\nconst d = (typeof t === 'object') ? t : JSON.parse(String(t).replace(/^\\s*```(?:json)?/i, '').replace(/```\\s*$/, '').trim());\nconst txt = v => String(v === undefined || v === null ? '' : v).trim();\nconst ent = v => { const n = parseInt(String(v === undefined || v === null ? '' : v).replace(/[^\\d]/g, ''), 10); return isNaN(n) ? 0 : n; };\nconst colores = Array.isArray(d.colores) ? d.colores : [];\nif (!colores.length) throw new Error('No se encontraron colores en la ficha');\nconst total = ent(d.cantidadTotal);\nconst suma = colores.reduce((a, c) => a + ent(c.cantidad), 0);\nif (suma !== total) throw new Error('La suma de los colores (' + suma + ') no coincide con el total (' + total + ')');\nconst filas = $input.all().map(i => i.json).filter(x => x['ID de carga']);\nconst art = txt(d.articulo), oc = txt(d.ordenCompra);\nconst dup = filas.find(x => txt(x['Artículo']) === art && txt(x['Orden de compra']) === oc);\nif (dup) throw new Error('Ya existe una carga para el artículo ' + art + ' con la OC ' + oc + ' (' + dup['ID de carga'] + ')');\nlet max = 0;\nfor (const x of filas) { const m = /^FT-(\\d+)$/.exec(String(x['ID de carga'] || '')); if (m) max = Math.max(max, Number(m[1])); }\nconst id = 'FT-' + String(max + 1).padStart(4, '0');\nconst bin = ($('Webhook subir').first().binary || {}).file || {};\nconst ahora = new Date().toISOString();\nreturn colores.map((c, i) => ({ json: {\n  'ID de carga': id, 'Cargado el': ahora, 'Artículo': art, 'Modelo': txt(d.modelo), 'Temporada': txt(d.temporada), 'Línea': txt(d.linea),\n  'Orden de compra': oc, 'Proveedor': txt(d.proveedor), 'Tela': txt(d.tela), 'Cantidad total de prendas': total,\n  'Código de color': txt(c.codigo), 'Color': txt(c.color), 'Cantidad del color': ent(c.cantidad), 'Estado': 'Pendiente',\n  'Fecha de la ficha': txt(d.fecha), 'Archivo de origen': bin.fileName || '', 'ID de fila': id + '-' + String(i + 1).padStart(2, '0')\n} }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ],
+      "id": "8e03ffbb-44e7-48ce-a2fe-69fe22a603e7",
+      "name": "Armar filas"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1KXO1nxD39INs7vF99yzmUav9LDW4-_RKOUshiLE2Sps",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Planilla",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID de carga",
+              "displayName": "ID de carga",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cargado el",
+              "displayName": "Cargado el",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Artículo",
+              "displayName": "Artículo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Modelo",
+              "displayName": "Modelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Temporada",
+              "displayName": "Temporada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Línea",
+              "displayName": "Línea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Orden de compra",
+              "displayName": "Orden de compra",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Proveedor",
+              "displayName": "Proveedor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tela",
+              "displayName": "Tela",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad total de prendas",
+              "displayName": "Cantidad total de prendas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Código de color",
+              "displayName": "Código de color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Color",
+              "displayName": "Color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad del color",
+              "displayName": "Cantidad del color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fecha de la ficha",
+              "displayName": "Fecha de la ficha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Archivo de origen",
+              "displayName": "Archivo de origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID de fila",
+              "displayName": "ID de fila",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        0
+      ],
+      "id": "4a01c7e7-6191-44ed-b6b1-ca4a572b68f4",
+      "name": "Agregar filas"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Armar filas').all().map(i => i.json);\nconst a = f[0];\nreturn [{ json: { idCarga: a['ID de carga'], estado: 'Pendiente', filas: f.length,\n  ficha: { articulo: a['Artículo'], modelo: a['Modelo'], temporada: a['Temporada'], linea: a['Línea'], ordenCompra: a['Orden de compra'],\n           proveedor: a['Proveedor'], tela: a['Tela'], cantidadTotal: a['Cantidad total de prendas'], fecha: a['Fecha de la ficha'],\n           colores: f.map(x => ({ codigo: x['Código de color'], color: x['Color'], cantidad: x['Cantidad del color'] })) } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ],
+      "id": "1ed8bf98-1ea6-459e-be66-c08750ecd8fb",
+      "name": "Armar respuesta"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "e872c75a-4ae7-4163-9137-5a547d466c50",
+      "name": "Responder"
+    }
+  ],
+  "connections": {
+    "Webhook listar": {
+      "main": [
+        [
+          {
+            "node": "Leer filas (listar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas (listar)": {
+      "main": [
+        [
+          {
+            "node": "Armar lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar lista": {
+      "main": [
+        [
+          {
+            "node": "Responder lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook estado": {
+      "main": [
+        [
+          {
+            "node": "Leer filas (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas (estado)": {
+      "main": [
+        [
+          {
+            "node": "Validar estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar estado": {
+      "main": [
+        [
+          {
+            "node": "¿Error? (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Error? (estado)": {
+      "main": [
+        [
+          {
+            "node": "Responder error (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Actualizar estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar estado": {
+      "main": [
+        [
+          {
+            "node": "Armar respuesta (estado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar respuesta (estado)": {
+      "main": [
+        [
+          {
+            "node": "Responder estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook subir": {
+      "main": [
+        [
+          {
+            "node": "Extraer texto del PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer texto del PDF": {
+      "main": [
+        [
+          {
+            "node": "Armar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar mensaje": {
+      "main": [
+        [
+          {
+            "node": "OpenAI analizar ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI analizar ficha": {
+      "main": [
+        [
+          {
+            "node": "Leer filas actuales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer filas actuales": {
+      "main": [
+        [
+          {
+            "node": "Armar filas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar filas": {
+      "main": [
+        [
+          {
+            "node": "Agregar filas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar filas": {
+      "main": [
+        [
+          {
+            "node": "Armar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

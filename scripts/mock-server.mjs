@@ -2,7 +2,8 @@
 //   npm run mock            -> http://localhost:8787
 // Variables opcionales:
 //   PORT=8787   MOCK_API_KEY=clave (exige el header X-API-Key)   MOCK_LATENCY=300 (ms de demora)
-//   MOCK_ORIGIN=http://localhost:5173 (origen permitido por CORS; por defecto cualquiera)
+//   MOCK_ORIGIN=http://localhost:5173   MOCK_SUBIDA_MS=1500 (demora de /fichas-subir)
+//   Un PDF con "error" en el nombre hace fallar /fichas-subir (500 sin cuerpo), como n8n. (origen permitido por CORS; por defecto cualquiera)
 // Los datos viven en memoria: se pierden al reiniciar.
 import { createServer } from 'node:http';
 
@@ -38,6 +39,32 @@ const filas = [
   fila(4, 'VES-3301', 'Proto 3', 'S', 'Verde oliva', 'Taller Sur', 'Tela', 'Tono más amarillento que el pantone.', 'Lucía Gómez', 3, -4, 'Para revisar', null),
   fila(5, 'REM-1500', 'Proto 2', 'M', 'Blanco', 'Confecciones Norte', 'Avíos', 'Cambiar botones.', 'Lucía Gómez', -12, -25, 'Cerrada', -13),
 ];
+
+// ---- Fichas técnicas (en memoria) ----
+const ESTADOS_FICHA = ['Pendiente', 'En producción', 'Terminada', 'Entregada'];
+const FICHA = {
+  articulo: '17678', modelo: 'JUAN', temporada: 'Invierno 20', linea: 'DEPORTIVA', ordenCompra: '69107',
+  proveedor: 'TEXAMERI', tela: 'Jersey marmolado', cantidadTotal: 1200, fecha: '2019-10-28',
+  colores: [
+    { codigo: '820', color: 'NEGRO GRANIZADO', cantidad: 600 },
+    { codigo: '881', color: 'AZUL MARINO GRANIZADO', cantidad: 600 },
+  ],
+};
+const filasFichas = [];
+let cargas = 0;
+
+const leerCrudo = (req, max = 20 * 1024 * 1024) =>
+  new Promise((resolve, reject) => {
+    const partes = [];
+    let total = 0;
+    req.on('data', (c) => {
+      total += c.length;
+      if (total > max) reject(new Error('Cuerpo demasiado grande'));
+      else partes.push(c);
+    });
+    req.on('end', () => resolve(Buffer.concat(partes)));
+    req.on('error', reject);
+  });
 
 const campos = ['codigo', 'version', 'talle', 'color', 'proveedor', 'tipo', 'detalle', 'enlace', 'responsable', 'fecha'];
 
@@ -109,6 +136,42 @@ const server = createServer(async (req, res) => {
       f.cierre = b.estado === 'Cerrada' ? String(b.cierre ?? '') : '';
       return responder(res, 200, f);
     }
+    if (req.method === 'GET' && ruta === '/fichas') {
+      return responder(res, 200, { items: filasFichas });
+    }
+    if (req.method === 'POST' && ruta === '/fichas-subir') {
+      const crudo = await leerCrudo(req);
+      if (!String(req.headers['content-type'] ?? '').startsWith('multipart/form-data')) {
+        res.writeHead(500, cabeceras);
+        return res.end();
+      }
+      const nombre = /filename="([^"]*)"/.exec(crudo.toString('latin1'))?.[1] ?? 'ficha.pdf';
+      // Para probar el camino de error: un archivo cuyo nombre contenga "error" hace fallar el flujo, como en n8n.
+      if (/error/i.test(nombre)) {
+        res.writeHead(500, cabeceras);
+        return res.end();
+      }
+      await new Promise((r) => setTimeout(r, Number(process.env.MOCK_SUBIDA_MS ?? 1500)));
+      const idCarga = `CARGA-${String(++cargas).padStart(4, '0')}`;
+      const cargado = new Date().toISOString();
+      FICHA.colores.forEach((c, i) => {
+        filasFichas.push({
+          idFila: `${idCarga}-${i + 1}`, idCarga, cargado, articulo: FICHA.articulo, modelo: FICHA.modelo,
+          temporada: FICHA.temporada, linea: FICHA.linea, ordenCompra: FICHA.ordenCompra, proveedor: FICHA.proveedor,
+          tela: FICHA.tela, cantidadTotal: FICHA.cantidadTotal, codigoColor: c.codigo, color: c.color,
+          cantidadColor: c.cantidad, estado: 'Pendiente', fechaFicha: FICHA.fecha, archivo: nombre,
+        });
+      });
+      return responder(res, 200, { idCarga, estado: 'Pendiente', filas: FICHA.colores.length, ficha: FICHA });
+    }
+    if (req.method === 'POST' && ruta === '/fichas-estado') {
+      const b = await leerCuerpo(req);
+      if (!ESTADOS_FICHA.includes(b.estado)) return responder(res, 400, { error: 'Estado inválido' });
+      const propias = filasFichas.filter((f) => f.idCarga === b.idCarga);
+      if (!propias.length) return responder(res, 404, { error: `No existe la carga ${b.idCarga}` });
+      propias.forEach((f) => (f.estado = b.estado));
+      return responder(res, 200, { idCarga: b.idCarga, estado: b.estado, filas: propias.length });
+    }
     return responder(res, 404, { error: 'Ruta inexistente' });
   } catch (e) {
     return responder(res, 400, { error: e instanceof Error ? e.message : 'Error' });
@@ -120,5 +183,6 @@ server.listen(PORT, () => {
   console.log('  GET  /correcciones');
   console.log('  POST /correcciones-crear');
   console.log('  POST /correcciones-estado');
+  console.log('  GET  /fichas   POST /fichas-subir (multipart, campo file)   POST /fichas-estado');
   console.log(`Usalo con VITE_API_BASE_URL=http://localhost:${PORT}${API_KEY ? ' y VITE_API_KEY=' + API_KEY : ''}`);
 });

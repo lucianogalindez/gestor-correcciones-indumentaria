@@ -2,6 +2,7 @@
 
 Aplicación web para registrar y dar seguimiento a las correcciones de muestras de indumentaria (Diseño y Desarrollo de Producto). Es un sitio estático (Vite + React + TypeScript) que se publica en Netlify y guarda los datos en un Google Sheet a través de n8n. Sin n8n funciona en modo demo, guardando en el navegador.
 
+- **Correcciones** (pestañas *Nueva corrección* y *Seguimiento*) y **Fichas técnicas** (ver más abajo).
 - **Nueva corrección**: formulario con validaciones; confirma con el ID solo si el guardado fue exitoso.
 - **Seguimiento**: indicadores (abiertas, abiertas vencidas, % vencidas), filtros, orden por fecha requerida, detalle de cada solicitud, cambio de estado (Pendiente, En corrección, Para revisar, Cerrada) y exportación a CSV para Excel.
 
@@ -160,6 +161,23 @@ Si definís `VITE_API_KEY`, la app envía el header `X-API-Key`. n8n no lo valid
 - Si falla el guardado de una solicitud nueva, el formulario conserva todo lo ingresado y explica el problema.
 - Se valida la forma de cada respuesta del servidor antes de usarla.
 
+## Fichas técnicas
+
+La segunda pestaña de la web (**Fichas técnicas**, dirección `#fichas`) permite subir el PDF de una ficha técnica: n8n lo lee con OpenAI y lo guarda en un Google Sheet, una fila por color. La web muestra la planilla agrupada por ficha.
+
+- **Cargar ficha:** arrastrá o elegí un PDF (solo PDF con texto, hasta 15 MB; se valida en el navegador). Mientras se procesa (10–60 s) se puede cancelar; el límite es de 120 s. Si sale bien, muestra el ID de carga, los datos y los colores con cantidades.
+- **Planilla:** una tarjeta por ficha (agrupada por `idCarga`) con sus colores desplegables, indicadores (fichas, prendas totales, sin terminar = Pendiente + En producción), búsqueda, filtros por estado y proveedor, cambio de estado (se ve al instante y se revierte si el servidor falla) y exportación a CSV.
+- **Errores de subida:** `/fichas-subir` no devuelve mensajes legibles; ante cualquier fallo la app muestra un único aviso ("No se pudo procesar la ficha…") y vuelve a leer la planilla por si igual se guardó.
+- **Sin `VITE_API_BASE_URL`** usa un mock en memoria (la subida espera 1,5 s y guarda una ficha de ejemplo: 17678 JUAN, 2 colores). Los datos se pierden al recargar.
+
+| Método y ruta | Entrada | Respuesta |
+|---|---|---|
+| `GET {BASE}/fichas` | — | `{ items: Fila[] }` (una fila por color) |
+| `POST {BASE}/fichas-subir` | `multipart/form-data`, campo `file` | `{ idCarga, estado, filas, ficha }` |
+| `POST {BASE}/fichas-estado` | JSON `{ idCarga, estado }` | `{ idCarga, estado, filas }` (o `{ error }` con 4xx) |
+
+Estados: Pendiente, En producción, Terminada, Entregada. El flujo de n8n se importa desde [`n8n/fichas-tecnicas-n8n-web.json`](n8n/fichas-tecnicas-n8n-web.json) (hay que asignar la credencial de Google Sheets, la de OpenAI, el ID del Sheet y el dominio de Netlify en CORS; después activarlo y usar la URL de producción, igual que en la sección 4). `npm run mock` también atiende estas tres rutas; un PDF con "error" en el nombre hace fallar `/fichas-subir` para probar el aviso de error.
+
 ## Estructura
 
 ```
@@ -175,12 +193,15 @@ src/
   repositories/
     repository.ts               interfaz CorreccionesRepository y errores
     localStorageRepository.ts   modo demo (con 8 solicitudes de ejemplo)
-    httpRepository.ts           adaptador n8n
+    clienteHttp.ts              cliente compartido hacia n8n (API key, timeout, errores)
+    httpRepository.ts           adaptador n8n de correcciones
     normalizar.ts               validación/normalización de respuestas
     index.ts                    elige adaptador según VITE_API_BASE_URL
-  hooks/                        lectura periódica y "hoy"
+  hooks/                        lectura periódica, "hoy" y fichas
+  fichas/                       pestaña Fichas técnicas (lógica, repositorios HTTP/mock, componentes)
   components/                   formulario, seguimiento, detalle (diálogo), conexión
-n8n/workflow-correcciones.json  workflow importable
+n8n/workflow-correcciones.json  workflow importable (correcciones)
+n8n/fichas-tecnicas-n8n-web.json  workflow importable (fichas técnicas)
 scripts/mock-server.mjs         `npm run mock`
 ```
 

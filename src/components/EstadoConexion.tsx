@@ -7,11 +7,13 @@ interface Props {
   ultimaLectura: Date | null;
   actualizando: boolean;
   onActualizar: () => void;
+  textoDemo?: string;
 }
 
 const hora = (d: Date) => d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
 const TITULO_ERROR = {
+  cancelado: 'Cancelado',
   'sin-conexion': 'Sin conexión',
   autorizacion: 'Acceso rechazado',
   servidor: 'Problema en el servidor',
@@ -19,7 +21,7 @@ const TITULO_ERROR = {
   otro: 'Error',
 } as const;
 
-export function EstadoConexion({ remoto, conexion, errorCarga, ultimaLectura, actualizando, onActualizar }: Props) {
+export function EstadoConexion({ remoto, conexion, errorCarga, ultimaLectura, actualizando, onActualizar, textoDemo }: Props) {
   let estado: string;
   let clase = 'conexion';
   if (conexion === 'error' && errorCarga) {
@@ -28,7 +30,7 @@ export function EstadoConexion({ remoto, conexion, errorCarga, ultimaLectura, ac
   } else if (conexion === 'cargando') {
     estado = 'Cargando…';
   } else if (!remoto) {
-    estado = 'Modo demo: los datos se guardan solo en este navegador';
+    estado = textoDemo ?? 'Modo demo: los datos se guardan solo en este navegador';
   } else {
     estado = ultimaLectura ? `Conectado · actualizado ${hora(ultimaLectura)}` : 'Conectado';
     clase += ' conexion--ok';

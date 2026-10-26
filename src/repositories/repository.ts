@@ -9,7 +9,7 @@ export interface CorreccionesRepository {
   cambiarEstado(id: string, estado: Estado, cierre: string): Promise<Correccion>;
 }
 
-export type TipoError = 'sin-conexion' | 'autorizacion' | 'servidor' | 'invalida' | 'otro';
+export type TipoError = 'cancelado' | 'sin-conexion' | 'autorizacion' | 'servidor' | 'invalida' | 'otro';
 
 export class RepoError extends Error {
   constructor(

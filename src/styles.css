@@ -203,3 +203,50 @@ input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* Subpestañas */
+.subtabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.subtab {
+  font: inherit; cursor: pointer; background: var(--superficie); color: var(--tenue);
+  border: 1px solid var(--borde); border-radius: 999px; padding: 8px 16px; min-height: 44px;
+}
+.subtab:hover { color: var(--texto); }
+.subtab[aria-current='page'] { background: var(--acento-suave); border-color: var(--acento); color: var(--acento-fuerte); font-weight: 600; }
+
+/* Fichas técnicas */
+.formulario--una { grid-template-columns: 1fr; max-width: 640px; }
+.zona {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  border: 2px dashed #8d939a; border-radius: var(--radio); padding: 28px 16px; cursor: pointer; background: #fbfaf8;
+  font-weight: 400;
+}
+.zona__titulo { font-weight: 600; overflow-wrap: anywhere; }
+.zona:hover, .zona--activa { border-color: var(--acento); background: var(--acento-suave); }
+.zona--bloqueada { opacity: 0.6; cursor: not-allowed; }
+.zona__input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.campo:has(.zona__input:focus-visible) .zona { outline: 3px solid var(--acento); outline-offset: 2px; }
+.zona__input[aria-invalid='true'] ~ .error { margin-top: 4px; }
+
+.ficha-ok { max-width: 640px; }
+.ficha-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; margin: 8px 0; }
+.ficha-datos dt { font-size: 0.8rem; opacity: 0.8; }
+.ficha-datos dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.ficha-colores { margin: 8px 0 12px; padding-left: 20px; }
+
+.fichas { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ficha { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; }
+.ficha__cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.ficha__titulo { margin: 0; font-size: 1.05rem; }
+.ficha__cabecera .tenue { margin: 0; }
+.ficha__estado { min-width: 190px; }
+.ficha__estado label { font-size: 0.8rem; color: var(--tenue); }
+.ficha__datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 12px 0; }
+.ficha__datos dt { font-size: 0.8rem; color: var(--tenue); }
+.ficha__datos dd { margin: 0; overflow-wrap: anywhere; }
+.ficha__colores summary { cursor: pointer; font-weight: 600; color: var(--acento-fuerte); min-height: 32px; }
+.tabla--chica { margin-top: 8px; border: 1px solid var(--borde); }
+
+@media (max-width: 720px) {
+  .ficha__estado { width: 100%; }
+  .tabla--chica thead { position: absolute; left: -9999px; }
+}
